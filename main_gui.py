@@ -202,7 +202,10 @@ class ModernJournalProcessorApp:
             width=60,
             font=self.normal_font
         )
-        self.url_entry.insert(0, CONFIG["download"]["base_url"])
+        
+        # Módosított rész: ellenőrizzük, hogy létezik-e a download szekció
+        default_url = CONFIG.get("download", {}).get("base_url", "")
+        self.url_entry.insert(0, default_url)
         self.url_entry.pack(fill=tk.X, pady=(0, 15))
         
         ttk.Label(
@@ -417,41 +420,59 @@ class ModernJournalProcessorApp:
             self.process_btn.config(state=tk.NORMAL)
     
     def process_uploaded_files(self):
-        raw_dir = CONFIG["download"]["output_dir"]
-        os.makedirs(raw_dir, exist_ok=True)
-        total_files = self.file_list.size()
-        
-        if total_files == 0:
-            raise ValueError("No files selected for processing")
-        
-        self.log_message(f"\nCopying {total_files} files to processing directory...")
-        
-        for i in range(total_files):
-            src = self.file_list.get(i)
-            filename, ext = os.path.splitext(os.path.basename(src))
-            dst = os.path.join(raw_dir, f"uploaded_{i+1}{ext}")
+        try:
+            # Biztonságos könyvtár beállítás
+            raw_dir = CONFIG.get("system", {}).get("temp_dir", "temp/uploads")
+            os.makedirs(raw_dir, exist_ok=True)
             
-            self.log_message(f"Copying: {os.path.basename(src)}")
-            with open(src, 'rb') as f_src, open(dst, 'wb') as f_dst:
-                f_dst.write(f_src.read())
+            total_files = self.file_list.size()
+            if total_files == 0:
+                raise ValueError("No files selected for processing")
             
-            self.update_progress((i+1)/total_files * 20)
-        
-        self.run_processing_pipeline()
+            self.log_message(f"\nProcessing {total_files} uploaded files...")
+            
+            for i in range(total_files):
+                src = self.file_list.get(i)
+                filename = os.path.basename(src)
+                dst = os.path.join(raw_dir, filename)
+                
+                self.log_message(f"Copying: {filename}")
+                with open(src, 'rb') as f_src, open(dst, 'wb') as f_dst:
+                    f_dst.write(f_src.read())
+                
+                self.update_progress((i+1)/total_files * 20)
+            
+            self.run_processing_pipeline()
+            
+        except Exception as e:
+            self.log_message(f"\nERROR in file processing: {str(e)}", "error")
+            raise
     
     def process_journal_url(self):
-        url = self.url_entry.get().strip()
-        if not url:
-            raise ValueError("Please enter a valid URL")
+        try:
+            url = self.url_entry.get().strip()
+            if not url:
+                raise ValueError("Please enter a valid URL")
+            
+            # Biztonságos konfig frissítés
+            if "download" not in CONFIG:
+                CONFIG["download"] = {}
+            CONFIG["download"]["base_url"] = url
+            
+            # Könyvtár struktúra biztosítása
+            if "output_dir" not in CONFIG["download"]:
+                CONFIG["download"]["output_dir"] = "temp/downloads"
+            os.makedirs(CONFIG["download"]["output_dir"], exist_ok=True)
+            
+            self.log_message(f"\nUsing URL: {url}")
+            self.log_message("\nDownloading journal issues...")
+            download_journal_issues()
+            self.update_progress(20)
+            self.run_processing_pipeline()
         
-        CONFIG["download"]["base_url"] = url
-        self.log_message(f"\nUsing URL: {url}")
-        
-        self.log_message("\nDownloading journal issues...")
-        download_journal_issues()
-        self.update_progress(20)
-        
-        self.run_processing_pipeline()
+        except Exception as e:
+            self.log_message(f"\nERROR in URL processing: {str(e)}", "error")
+            raise
     
     def run_processing_pipeline(self):
         if self.extract_var.get():
