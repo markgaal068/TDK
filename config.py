@@ -41,27 +41,45 @@ CONFIG = {
             "detection_mode": "lattice"  # "stream" or "lattice"
         }
     },
+    "extraction": {  # ÚJ SZEKCIÓ A HIÁNYZÓ BEÁLLÍTÁSOKKAL
+        "output_file": "output/extracted_text.txt",
+        "backup_dir": "output/backups/",
+        "overwrite_existing": False
+    },
     "output": {
         "formats": {
             "excel": {
                 "enabled": True,
-                "include": ["metadata", "sections", "keywords", "tables"]
+                "include": ["metadata", "sections", "keywords", "tables"],
+                "output_path": "output/results.xlsx"  # ÚJ BEÁLLÍTÁS
             },
             "json": {
                 "enabled": True,
-                "pretty_print": True
+                "pretty_print": True,
+                "output_path": "output/results.json"  # ÚJ BEÁLLÍTÁS
             }
         },
         "visualization": {
             "wordcloud": {
                 "enabled": True,
                 "width": 800,
-                "height": 600
+                "height": 600,
+                "output_path": "output/wordcloud.png"  # ÚJ BEÁLLÍTÁS
             }
         }
     },
     "system": {
         "temp_dir": "temp/",
-        "log_level": "INFO"
-    }
+        "log_level": "INFO",
+        "max_workers": 4  # ÚJ BEÁLLÍTÁS
+    },
+    "merging": {
+    "input_dir": "./temp",
+    "output_file": "./output/merged.xlsx"
+},
+"cleaning": {
+    "output_file": "output/cleaned_data.xlsx",
+    "stopwords": ["a", "an", "the", ...],
+    "min_keyword_length": 4
+},
 }
