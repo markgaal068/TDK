@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                             QTextEdit, QFileDialog, QMessageBox, QProgressBar,
                             QTabWidget, QListWidget, QFrame)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QFont, QIcon, QDragEnterEvent, QDropEvent
+from PyQt6.QtGui import QFont, QIcon, QDragEnterEvent, QDropEvent, QColor, QPalette
 from tobbestEgyesbe import process_pdfs, process_urls, TextAnalyzer
 
 class PDFProcessorThread(QThread):
@@ -47,6 +47,20 @@ class DragDropListWidget(QListWidget):
         super().__init__()
         self.setAcceptDrops(True)
         self.setDragEnabled(True)
+        self.setStyleSheet("""
+            QListWidget {
+                background-color: #F5F7FA;
+                border: 2px dashed #C1C7D0;
+                border-radius: 8px;
+                padding: 16px;
+                font-size: 14px;
+                color: #5E6C84;
+            }
+            QListWidget::item {
+                padding: 8px;
+                border-bottom: 1px solid #DFE1E6;
+            }
+        """)
         
     def dragEnterEvent(self, event: QDragEnterEvent):
         if event.mimeData().hasUrls():
@@ -64,36 +78,108 @@ class DragDropListWidget(QListWidget):
 class ModernButton(QPushButton):
     def __init__(self, text, parent=None):
         super().__init__(text, parent)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setStyleSheet("""
             QPushButton {
-                background-color: #2196F3;
+                background-color: #4A6FA5;
                 color: white;
                 border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                font-weight: bold;
+                padding: 10px 20px;
+                border-radius: 6px;
+                font-weight: 600;
+                font-size: 14px;
+                min-width: 120px;
             }
             QPushButton:hover {
-                background-color: #1976D2;
+                background-color: #3A5A8F;
             }
             QPushButton:pressed {
-                background-color: #0D47A1;
+                background-color: #2A4A7F;
+            }
+            QPushButton:disabled {
+                background-color: #CCD4E0;
+                color: #7A869A;
             }
         """)
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("PDF Abstract Processor")
-        self.setMinimumSize(800, 600)
+        self.setWindowTitle("Abstract Processor Professor")
+        self.setMinimumSize(900, 700)
+        
+        # Set application palette for dark theme
+        palette = QPalette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(240, 241, 245))
+        palette.setColor(QPalette.ColorRole.WindowText, QColor(23, 43, 77))
+        palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))
+        palette.setColor(QPalette.ColorRole.AlternateBase, QColor(240, 241, 245))
+        palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
+        palette.setColor(QPalette.ColorRole.ToolTipText, QColor(23, 43, 77))
+        palette.setColor(QPalette.ColorRole.Text, QColor(23, 43, 77))
+        palette.setColor(QPalette.ColorRole.Button, QColor(240, 241, 245))
+        palette.setColor(QPalette.ColorRole.ButtonText, QColor(23, 43, 77))
+        palette.setColor(QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
+        palette.setColor(QPalette.ColorRole.Highlight, QColor(64, 112, 192))
+        palette.setColor(QPalette.ColorRole.HighlightedText, Qt.GlobalColor.white)
+        QApplication.setPalette(palette)
         
         # Create main widget and layout
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
         layout = QVBoxLayout(main_widget)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
+        
+        # Header
+        header = QLabel("PDF Abstract Processor")
+        header.setStyleSheet("""
+            QLabel {
+                font-size: 24px;
+                font-weight: bold;
+                color: #172B4D;
+                padding-bottom: 10px;
+            }
+        """)
+        layout.addWidget(header)
+        
+        # Subheader
+        subheader = QLabel("Extract and analyze text from PDF files or URLs")
+        subheader.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                color: #5E6C84;
+                padding-bottom: 20px;
+            }
+        """)
+        layout.addWidget(subheader)
         
         # Create tab widget
         tabs = QTabWidget()
+        tabs.setStyleSheet("""
+            QTabWidget::pane {
+                border: 1px solid #DFE1E6;
+                border-radius: 6px;
+                background: white;
+            }
+            QTabBar::tab {
+                background: #F5F7FA;
+                border: 1px solid #DFE1E6;
+                padding: 8px 16px;
+                border-top-left-radius: 6px;
+                border-top-right-radius: 6px;
+                color: #5E6C84;
+                font-weight: 600;
+            }
+            QTabBar::tab:selected {
+                background: white;
+                border-bottom: 2px solid #4A6FA5;
+                color: #172B4D;
+            }
+            QTabBar::tab:hover {
+                background: #EBECF0;
+            }
+        """)
         layout.addWidget(tabs)
         
         # Create tabs
@@ -105,17 +191,52 @@ class MainWindow(QMainWindow):
         tabs.addTab(url_tab, "URLs")
         
         # Status bar
+        self.statusBar().setStyleSheet("""
+            QStatusBar {
+                background: #F5F7FA;
+                color: #5E6C84;
+                border-top: 1px solid #DFE1E6;
+                padding: 4px;
+            }
+        """)
         self.statusBar().showMessage("Ready")
         
         # Progress bar
         self.progress_bar = QProgressBar()
+        self.progress_bar.setStyleSheet("""
+            QProgressBar {
+                border: 1px solid #DFE1E6;
+                border-radius: 4px;
+                text-align: center;
+                background: white;
+                height: 20px;
+            }
+            QProgressBar::chunk {
+                background-color: #4A6FA5;
+                width: 10px;
+            }
+        """)
         self.progress_bar.hide()
         layout.addWidget(self.progress_bar)
         
         # Log area
+        log_label = QLabel("Processing Log:")
+        log_label.setStyleSheet("font-weight: 600; color: #172B4D;")
+        layout.addWidget(log_label)
+        
         self.log_area = QTextEdit()
         self.log_area.setReadOnly(True)
         self.log_area.setMaximumHeight(150)
+        self.log_area.setStyleSheet("""
+            QTextEdit {
+                background-color: white;
+                border: 1px solid #DFE1E6;
+                border-radius: 6px;
+                padding: 8px;
+                font-family: monospace;
+                color: #172B4D;
+            }
+        """)
         layout.addWidget(self.log_area)
         
         # Initialize processor threads
@@ -125,14 +246,21 @@ class MainWindow(QMainWindow):
     def create_local_tab(self):
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(15)
         
         # File list
+        label = QLabel("Drag and drop PDF files here or use the button below:")
+        label.setStyleSheet("color: #5E6C84;")
+        layout.addWidget(label)
+        
         self.file_list = DragDropListWidget()
-        layout.addWidget(QLabel("Drag and drop PDF files here or use the button below:"))
+        self.file_list.setMinimumHeight(200)
         layout.addWidget(self.file_list)
         
         # Buttons
         button_layout = QHBoxLayout()
+        button_layout.setSpacing(10)
         
         add_button = ModernButton("Add PDFs")
         add_button.clicked.connect(self.add_pdfs)
@@ -151,18 +279,32 @@ class MainWindow(QMainWindow):
         # Process button
         process_button = ModernButton("Process PDFs")
         process_button.clicked.connect(self.process_local_pdfs)
-        layout.addWidget(process_button)
+        process_button.setStyleSheet("background-color: #5AAC44;")
+        process_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        layout.addWidget(process_button, alignment=Qt.AlignmentFlag.AlignRight)
         
         return widget
         
     def create_url_tab(self):
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(15)
         
         # URL input
         url_layout = QHBoxLayout()
+        url_layout.setSpacing(10)
+        
         self.url_input = QLineEdit()
-        self.url_input.setPlaceholderText("Enter PDF URL")
+        self.url_input.setPlaceholderText("Enter PDF URL (e.g., https://example.com/document.pdf)")
+        self.url_input.setStyleSheet("""
+            QLineEdit {
+                padding: 10px;
+                border: 1px solid #DFE1E6;
+                border-radius: 6px;
+                background: white;
+            }
+        """)
         url_layout.addWidget(self.url_input)
         
         add_url_button = ModernButton("Add URL")
@@ -172,12 +314,29 @@ class MainWindow(QMainWindow):
         layout.addLayout(url_layout)
         
         # URL list
+        label = QLabel("URLs to process:")
+        label.setStyleSheet("color: #5E6C84;")
+        layout.addWidget(label)
+        
         self.url_list = QListWidget()
-        layout.addWidget(QLabel("URLs to process:"))
+        self.url_list.setStyleSheet("""
+            QListWidget {
+                background-color: white;
+                border: 1px solid #DFE1E6;
+                border-radius: 6px;
+                padding: 8px;
+            }
+            QListWidget::item {
+                padding: 8px;
+                border-bottom: 1px solid #DFE1E6;
+            }
+        """)
+        self.url_list.setMinimumHeight(150)
         layout.addWidget(self.url_list)
         
         # Buttons
         button_layout = QHBoxLayout()
+        button_layout.setSpacing(10)
         
         remove_url_button = ModernButton("Remove Selected")
         remove_url_button.clicked.connect(self.remove_selected_url)
@@ -192,7 +351,9 @@ class MainWindow(QMainWindow):
         # Process button
         process_button = ModernButton("Process URLs")
         process_button.clicked.connect(self.process_urls)
-        layout.addWidget(process_button)
+        process_button.setStyleSheet("background-color: #5AAC44;")
+        process_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        layout.addWidget(process_button, alignment=Qt.AlignmentFlag.AlignRight)
         
         return widget
         
@@ -279,11 +440,13 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     
-    # Set application style
+    # Set application style and font
     app.setStyle("Fusion")
+    font = QFont("Segoe UI", 10)
+    app.setFont(font)
     
     # Create and show main window
     window = MainWindow()
     window.show()
     
-    sys.exit(app.exec()) 
+    sys.exit(app.exec())
